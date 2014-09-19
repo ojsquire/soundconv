@@ -1,16 +1,30 @@
+#!/bin/bash
+
+#Takes a .wav file as input and converts to a .flac and a .ogg.
+#Also takes input of metadata - currently this is specified in
+#this script, but should also be able to add this from a file.
+#Would be good to allow lookup of metadata from online database
+#e.g. CDDB  - only thing is CDDB works only by matching CD data
+#and not file data - need to find something that does this.
+#Also, this script works on a full release basis rather than a
+#track-by-track basis, so could just specify Artist and Album
+#and this should be enough to do an online lookup of all other
+#relevant data (e.g. track titles, genre etc). Should also add
+#an option to check database manually and override if necessary.
+
 #Specifications#############################################################
 quality=-1 #Ranges from -1 (lowest) to 10 (highest). Even -1 is good quality w/ a bitrate ~40kb/s.
 #Metadata
 
-artist="Boards Of Canada"
-album="Music Has The Right To Children"
-date="1998"
-genre="Ambient"
+artist=""
+album=""
+date=""
+genre=""
 
-tracks=("Wildlife Analysis"
+tracks=(""
         ""
-	
-        )
+	""
+       )
 
 tracksClean=(${tracks[@]//[^[:alnum:]-]/_})
 
