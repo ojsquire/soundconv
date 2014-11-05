@@ -4,35 +4,41 @@
 #Also takes input of metadata - currently this is specified in
 #this script, but should also be able to add this from a file.
 #Would be good to allow lookup of metadata from online database
-#e.g. CDDB  - only thing is CDDB works only by matching CD data
-#and not file data - need to find something that does this.
-#Also, this script works on a full release basis rather than a
-#track-by-track basis, so could just specify Artist and Album
-#and this should be enough to do an online lookup of all other
-#relevant data (e.g. track titles, genre etc). Should also add
-#an option to check database manually and override if necessary.
+#e.g. MusicBrainz, or even Discogs (has a free API). Should also
+# add an option to check database manually and override if
+# necessary.
 
 #Specifications#############################################################
 quality=-1 #Ranges from -1 (lowest) to 10 (highest). Even -1 is good quality w/ a bitrate ~40kb/s.
 #Metadata
 
-artist=""
-album=""
-date=""
-genre=""
+#Read in metadata #here $1 is the path/to/file/dir/
+#(can be anywhere, no need for connection w/ location of actual files).
+. ${1}meta.sh
 
-tracks=(""
-        ""
-	""
-       )
+# artist=""
+# album=""
+# date=""
+# genre=""
+
+# tracks=(""
+#         ""
+# 	""
+#        )
 
 tracksClean=(${tracks[@]//[^[:alnum:]-]/_})
+
+echo "Tracks are: ${tracksClean[@]}"
+echo "Artist is: ${artist}"
+echo "Album is: ${album}"
 
 AlnumArtist=${artist//[^[:alnum:]-]/_}
 AlnumAlbum=${album//[^[:alnum:]-]/_}
 
-picture="/home/ollie/old_m4a/${AlnumArtist}/${AlnumAlbum}/${AlnumAlbum}.jpg"
-inputPath="/home/ollie/Sound/uncompressed/${AlnumArtist}/${AlnumAlbum}/"
+inputPath=${1}
+
+picture="${inputPath}cover.jpg"
+
 
 FlacHome="/home/ollie/Sound/compressed_lossless/${AlnumArtist}/${AlnumAlbum}/"
 mkdir -p ${FlacHome}
@@ -40,10 +46,15 @@ mkdir -p ${FlacHome}
 OggHome="/home/ollie/Music/${AlnumArtist}/${AlnumAlbum}/"
 mkdir -p ${OggHome}
 
+flacBack="/media/ollie/INTENSO/ollie/Sound/compressed_lossless/${AlnumArtist}/${AlnumAlbum}/"
+mkdir -p ${flacBack}
+
+#echo "FUCK HERE!"
 #MAIN LOOP##############################
 for (( i=0; i<=$((${#tracksClean[@]}-1)); i++ ))
 do
 #Convert to flac format
+#echo "HERE!!!!"
 title=${tracks[${i}]}
 index1=$(printf "%02d" $((i+1)))
 echo "Converting $((i+1))/${#tracksClean[@]} ${title} to flac format."
@@ -66,6 +77,14 @@ cp ${picture} ${OggHome}
 echo "Copying to Google Drive"
 mkdir -p /home/ollie/Google\ Drive/Music/${AlnumArtist}/${AlnumAlbum}
 cp ${OggHome}* /home/ollie/Google\ Drive/Music/${AlnumArtist}/${AlnumAlbum}
+#Copy flac to external hard drive
+echo "Copying flac to external hard drive"
+cp ${FlacHome}* ${flacBack}
+
+#Copy metadata file
+echo "Copying meta data file"
+cp ${1}meta.sh ${FlacHome}
+cp ${1}meta.sh ${flacBack}
 
 echo "FINISHED"
 
