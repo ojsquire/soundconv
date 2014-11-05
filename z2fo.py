@@ -217,32 +217,6 @@ for filename in flacFiles:
     #Run the command using subprocess
     vorbisComments.append(sp.check_output(cmd))
 
-#for comment in vorbisComments:
-#    print comment
-#print vorbisComments[0]
-#print vorbisComments
-#import subprocess as sp
-#filename = "/media/ollie/INTENSO1/ollie/Sound/compressed_lossless/Poborsk/Gradient_Scene/Poborsk - Gradient Scene - 02 Metameatball.flac"
-#cmd = ["metaflac","--list","--block-type=VORBIS_COMMENT",filename]
-#vorbisComments = sp.check_output(cmd)
-
-#Now need to construct the file names
-#vorbisCommentList = vorbisComment.split("\n")
-
-#Look, there could be any number of comments associated with a file. Let's make a couple of assumptions.
-#1. All files in a dir will have the SAME number of files.
-
-#So, let's use a while loop (as we don't know how long it'll need to be).
-#commentList = vorbisComments.split("\n")
-#print commentList
-#commentOnlyList = []
-#for comment in commentList:
-#    if (comment.startswith("    comment[") == True):
-#        commentOnlyList.append(comment)
-
-#for comment in commentOnlyList:
-#import re
-
 #create a dictionary to hold key/value pairs
 allMeta = []
 for comV in vorbisComments:
@@ -258,14 +232,32 @@ for comV in vorbisComments:
             trackComments[comment.split(mm)[1].split('=',1)[0]] = comment.split(mm)[1].split('=',1)[1]
     allMeta.append(trackComments)
 
-print allMeta  
-    
-#for track in allMeta:
-#    print allMeta
+#Create new file names in desired format
+newTrackNames = []
+for tracks in allMeta:
+    tn = "%02d" % int(tracks['TRACKNUMBER'])
+    trAlNum = re.sub(r'\W+', '_', tracks['TITLE'])
+    newFname = tn + '_' + trAlNum + '.flac'
+    newTrackNames.append(newFname)
 
-# <codecell>
+#Check file names with user
+print "Rename tracks as follows?\n"
+for track in newTrackNames:
+    print track
+raw_input("\nAnswer Y/any other no: ")
 
-#xxx = {}
+#Rename files to my desired style.
+for i in range(0,len(allMeta)):
+    tn = "%02d" % int(allMeta[i]['TRACKNUMBER'])
+    trAlNum = re.sub(r'\W+', '_', allMeta[i]['TITLE'])
+    newFname = outFlacAlb + tn + '_' + trAlNum + '.flac'
+    newFname1 = outFlacAlb1 + tn + '_' + trAlNum + '.flac'
+    cmd = ["mv",outFlacAlb + flacFiles[i], newFname]
+    sp.call(cmd)
+    cmd1 = ["mv",outFlacAlb1 + flacFiles[i], newFname]
+    sp.call(cmd1)
+
+#Next is to convert to OGG.
 
 # <codecell>
 
