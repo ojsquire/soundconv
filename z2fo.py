@@ -73,6 +73,7 @@ for filename in zippedFiles:
 #Extract all FLAC files to /tmp (so can examine metadata)
 whereExtract = "/tmp/z2fo/"
 
+print "\nExtracting into" + whereExtract + " and determining new file names. One moment..."
 for filename in zippedFiles:
     myZip.extract(filename, path=whereExtract) #extract files to /tmp
 
@@ -335,12 +336,12 @@ if connectedDrivesLossy:
             print "Copying to " + drive + " this may take a few seconds..."
             sp.call(["mkdir","-p",drive])
 #            sp.call(["cp",outdir + "*",drive])
-            sp.call(['cp', '-t', drive] + glob.glob(whereExtract + '*'))
+            sp.call(['cp', '-t', drive] + glob.glob(outdir + '*'))
 
         print "Copying to " + googleD
         sp.call(["mkdir","-p",googleD])
 #        sp.call(["cp",outdir + "*",googleD])
-        sp.call(['cp', '-t', googleD] + glob.glob(whereExtract + '*'))
+        sp.call(['cp', '-t', googleD] + glob.glob(outdir + '*'))
 
     else:
         pass
