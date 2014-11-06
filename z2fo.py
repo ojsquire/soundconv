@@ -23,11 +23,6 @@ import subprocess as sp
 
 # <codecell>
 
-#Set dirs for FLAC backups.
-outFlac = "/media/ollie/INTENSO/ollie/Sound/compressed_lossless/"
-outFlac1 = "/media/ollie/INTENSO1/ollie/Sound/compressed_lossless/" 
-
-
 #Handle parsing of arguements to function
 
 #Create an instance of an arguement parser (gives us --help for free)
@@ -69,150 +64,22 @@ if not flacFiles:
     print "No FLAC files were found, aborting."
     sys.exit()
 
-#Print found FLAC files
-print str(len(flacFiles)) + " FLAC files were found"
-for flac in flacFiles:
-    print flac
+#Print found files
+print "\n" + str(len(zippedFiles)) + " files were found:"
+for filename in zippedFiles:
+    print filename
 
-#Extract first FLAC file (so can examine metadata)
+#Extract all FLAC files to /tmp (so can examine metadata)
 whereExtract = "/tmp/"
-metaflacFile = flacFiles[0]
-myZip.extract(metaflacFile, path=whereExtract) #extract file to /tmp
 
-#For convenience, set full path to extracted file
-metaflacFullPath = whereExtract+metaflacFile
+for flac in flacFiles:
+    myZip.extract(flac, path=whereExtract) #extract files to /tmp
 
-#Set up a metaflac command on extracted file 
-cmd = ["metaflac","--list","--block-type=VORBIS_COMMENT",metaflacFullPath]
-
-#Run the command using subprocess
-vorbisComment = sp.check_output(cmd)
-
-#At this point we can delete the extracted file
-#sp.call(["rm","-f",metaflacFullPath])
-
-#This output is a single string containing all the data from the VORBIS_COMMENT block
-#so let's split it up by newlines to make it easier to extract the info we need.
-vorbisCommentList = vorbisComment.split("\n")
-
-#Get the artist
-artistComment = [s for s in vorbisCommentList if " ARTIST=" in s]
-artist = artistComment[0].split("ARTIST=")[1]
-
-#Get the album
-albumComment = [s for s in vorbisCommentList if " ALBUM=" in s]
-album = albumComment[0].split("ALBUM=")[1]
-
-artistAlNum = re.sub(r'\W+', '_', artist)
-albumAlNum = re.sub(r'\W+', '_', album)
-
-outFlacAlb = outFlac + artistAlNum + '/' + albumAlNum + '/'
-outFlacAlb1 = outFlac1 + artistAlNum + '/' + albumAlNum + '/'
-
-#Check if extraction dirs already exist, and whether they are empty or not.
-#This next block asks whether you'd like to extract to dir0, if yes, check if exists, if does, ask again, if no go to next, if yes, extract, if no, 
-#ask for another file name, then go to next, if don't want to extract to new file name, go to next, then either extract w/ same line of questioning
-#or exit. That clear?
-doExtract = raw_input("\nExtract to the following directory?\n" + outFlacAlb + "\n(Answer Y/any other key for no): ")
-
-if doExtract == "Y":
-    if (os.path.isdir(outFlacAlb)==True):
-        writeToDir = raw_input("Directory" + outFlacAlb + " already exists. Proceed with extraction?\n Answer Y/any other key for no:")
-        if writeToDir == "Y":
-            print "Extracting files - this may take a few seconds..."
-            myZip.extractall(outFlacAlb)
-        else:
-            doExtract1 = raw_input("\nExtract to the following directory?\n" + outFlacAlb1 + "\n(Answer Y/any other key for no): ")
-            if doExtract1 == "Y":
-                if (os.path.isdir(outFlacAlb1)==True):
-                    writeToDir = raw_input("Directory" + outFlacAlb + " already exists. Proceed with extraction?\n Answer Y/any other key for no:")
-                    if writeToDir == "Y":
-                        print "Extracting files - this may take a few seconds..."
-                        myZip.extractall(outFlacAlb1)
-                    else:
-                        print "No files extracted, continuing with meta read."
-                        pass
-                else:
-                    print "Extracting files - this may take a few seconds..."
-                    myZip.extractall(outFlacAlb1)
-            else:
-                newPath = raw_input("Specify alternative path (or 's' to skip to meta reading):")
-                if newPath == 's':
-                    pass
-                else:
-                    areYouSure = raw_input("Extract to the following directory?\n" + newPath + "\n(Answer Y/any other key to quit):")
-                    if areYouSure == "Y":
-                        myZip.extractall(newPath)
-                    else:
-                        pass
-    else:
-        print "Extracting files - this may take a few seconds..."
-        myZip.extractall(outFlacAlb)
-        doExtract1 = raw_input("\nExtract to the following directory?\n" + outFlacAlb1 + "\n(Answer Y/any other key for no): ")
-        if doExtract1 == "Y":
-            if (os.path.isdir(outFlacAlb1)==True):
-                writeToDir = raw_input("Directory" + outFlacAlb + " already exists. Proceed with extraction?\n Answer Y/any other key for no:")
-                if writeToDir == "Y":
-                    print "Extracting files - this may take a few seconds..."
-                    myZip.extractall(outFlacAlb1)
-                else:
-                    print "No files extracted, skipping to meta read."
-                    pass
-            else:
-                print "Extracting files - this may take a few seconds..."
-                myZip.extractall(outFlacAlb1)
-        else:
-            newPath = raw_input("Specify alternative path (or 's' to skip to meta read):")
-            if newPath == 's':
-                pass
-            else:
-                areYouSure = raw_input("Extract to the following directory?\n" + newPath + "\n(Answer Y/any other key to quit):")
-                if areYouSure == "Y":
-                    myZip.extractall(newPath)
-                else:
-                    pass
-else:
-    newPath = raw_input("Specify alternative path (or 's' to skip to next extraction dir):")
-    if newPath == 's':
-        doExtract1 = raw_input("\nExtract to the following directory?\n" + outFlacAlb1 + "\n(Answer Y/any other key for no): ")
-        if doExtract1 == "Y":
-            if (os.path.isdir(outFlacAlb1)==True):
-                writeToDir = raw_input("Directory" + outFlacAlb + " already exists. Proceed with extraction?\n Answer Y/any other key for no:")
-                if writeToDir == "Y":
-                    print "Extracting files - this may take a few seconds..."
-                    myZip.extractall(outFlacAlb1)
-                else:
-                    print "No files extracted, skipping to meta read."
-                    pass
-            else:
-                print "Extracting files - this may take a few seconds..."
-                myZip.extractall(outFlacAlb1)
-        else:
-            newPath = raw_input("Specify alternative path (or 's' to skip to meta read):")
-            if newPath == 's':
-                pass
-            else:
-                areYouSure = raw_input("Extract to the following directory?\n" + newPath + "\n(Answer Y/any other key to quit):")
-                if areYouSure == "Y":
-                    myZip.extractall(newPath)
-                else:
-                    pass
-    else:
-        areYouSure = raw_input("Extract to the following directory?\n" + newPath + "\n(Answer Y/any other key to quit):")
-        if areYouSure == "Y":
-            myZip.extractall(newPath)
-        else:
-            pass
-
-# <codecell>
-
-#Next step is to rename all extracted files in the dir according to each files specific metadata and some pattern.
-#Pull all metadata
-
+#Get all metadata from FLAC files extracted to /tmp/
 vorbisComments = []
 for filename in flacFiles:
     #Set up a metaflac command on extracted file 
-    cmd = ["metaflac","--list","--block-type=VORBIS_COMMENT",outFlacAlb + filename]
+    cmd = ["metaflac","--list","--block-type=VORBIS_COMMENT",whereExtract + filename]
     
     #Run the command using subprocess
     vorbisComments.append(sp.check_output(cmd))
@@ -232,6 +99,94 @@ for comV in vorbisComments:
             trackComments[comment.split(mm)[1].split('=',1)[0]] = comment.split(mm)[1].split('=',1)[1]
     allMeta.append(trackComments)
 
+#At this point, we have extracted all of the metadata and so can delete the extracted files from /tmp/
+for filename in zippedFiles:
+    cmd = ["rm","-f",whereExtract + filename]
+    sp.call(cmd)
+
+#Compilation test (test if artist tag is the same for all files)
+def all_same(items):
+    return all(x == items[0] for x in items)
+
+artists = []
+for track in allMeta:
+    artists.append(track['ARTIST'])
+    
+#Run test
+if all_same(artists) == True:
+    artist = artists[0]
+else:
+    print "This is a compilation, exiting until I can handle this properly"
+    exit.sys()
+
+#Create alpha-numeric-only versions of the artist and album, for directory structure.
+album = allMeta[0]['ALBUM']
+
+artistAlNum = re.sub(r'\W+', '_', artist)
+albumAlNum = re.sub(r'\W+', '_', album)
+
+# <codecell>
+
+#Check what external drives are connected. If none are connected, ask to extract locally, else exit.
+
+#The Dir where external drives appear if connected
+externalDir = "/media/ollie/"
+
+#List them
+cmd = ["ls",externalDir]
+extDri = [externalDir + i + '/' for i in sp.check_output(cmd).splitlines()]
+
+#Add rules for known external drives and folders I'd typically like to write to
+ruleIntenso = "Sound/compressed_lossless/"
+ruleIntenso1 = "Sound/compressed_lossless/"
+ruleIomega = "Ollie/compressed_lossless/"
+
+connectedDrives = []
+    
+#Check for connected drives and use extracted artist/album info to 
+if [x for x in extDri if x in "/media/ollie/INTENSO/"]:
+    connectedDrives.append([x for x in extDri if x in "/media/ollie/INTENSO/"][0] + ruleIntenso + artistAlNum + '/' + albumAlNum + '/')
+else:
+    pass
+
+if [x for x in extDri if x in "/media/ollie/INTENSO1/"]:
+    connectedDrives.append([x for x in extDri if x in "/media/ollie/INTENSO1/"][0] + ruleIntenso1 + artistAlNum + '/' + albumAlNum + '/')
+else:
+    pass
+
+if [x for x in extDri if x in "/media/ollie/8A9C1DFF9C1DE68B/"]:
+    connectedDrives.append([x for x in extDri if x in "/media/ollie/8A9C1DFF9C1DE68B/"][0] + ruleIomega + artistAlNum + '/' + albumAlNum + '/')
+else:
+    pass
+
+#Set local extraction directory
+localExtDir = "/ollie/Sound/compressed_lossless/" + artistAlNum + '/' + albumAlNum + '/'
+
+# <codecell>
+
+#Carry out extraction to all connected drives, or locally if none connected.
+if connectedDrives:
+    print '\nExtract to the following external locations? '
+    for i in connectedDrives: print i
+    doExtractExt = raw_input("Press 'Y' to extract, any other key to abort: ")
+    if doExtractExt == 'Y':
+        for drive in connectedDrives:
+            print "Extracting to " + drive + " this may take a few seconds..."
+            myZip.extractall(drive)
+    else:
+        sys.exit()
+else:
+    print 'No external FLAC archive dirs found. Write locally to' + localExtDir +'instead?'
+    writeLocal = raw_input("Press 'Y' to write locally, any other key to exit: ")
+    if writeLocal == "Y":
+        print 'Extracting to ' + localExtDir + ' this may take a few seconds...'
+    else:
+        sys.exit()
+
+# <codecell>
+
+#Next step is to rename all extracted files in the dir according to each files specific metadata and some pattern.
+
 #Create new file names in desired format
 newTrackNames = []
 for tracks in allMeta:
@@ -244,22 +199,28 @@ for tracks in allMeta:
 print "Rename tracks as follows?\n"
 for track in newTrackNames:
     print track
-raw_input("\nAnswer Y/any other no: ")
-
-#Rename files to my desired style.
-for i in range(0,len(allMeta)):
-    tn = "%02d" % int(allMeta[i]['TRACKNUMBER'])
-    trAlNum = re.sub(r'\W+', '_', allMeta[i]['TITLE'])
-    newFname = outFlacAlb + tn + '_' + trAlNum + '.flac'
-    newFname1 = outFlacAlb1 + tn + '_' + trAlNum + '.flac'
-    cmd = ["mv",outFlacAlb + flacFiles[i], newFname]
-    sp.call(cmd)
-    cmd1 = ["mv",outFlacAlb1 + flacFiles[i], newFname]
-    sp.call(cmd1)
-
-#Next is to convert to OGG.
+    
+rename = raw_input("\nAnswer Y/any other no: ")
+        
+if rename == "Y":
+    #Rename files to my desired style.
+    for drive in connectedDrives:
+        for oldName, newName in zip(flacFiles, newTrackNames):
+            cmd = ["mv", drive + oldName, drive + newName]
+            sp.call(cmd)
+else:
+    pass
 
 # <codecell>
+
+#Next is to convert to OGG.
+#raw_input("Convert to OGG?")
+#Convert to ogg-vorbis using oggenc
+#echo "Converting $((i+1))/${#tracksClean[@]} ${title} to ogg-Vorbis format."
+#    FileName="${index1}_${tracksClean[i]}"     
+#oggenc -q ${quality} --tracknum $((${i}+1)) --title "${title}" --artist "${artist}" --album "${album}" --date "${date}" --genre "${genre}" -o ${OggHome}${FileName}.ogg ${inputPath}${FileName}.wav
+#~/bin/ogg-cover-art.sh ${picture} ${OggHome}${FileName}.ogg #Ogg artwork
+#done
 
 #Further things:
 #1) interface with MySQL and send all metadata to MySQL table - can then create a nice API-GUI to sit on top of 
