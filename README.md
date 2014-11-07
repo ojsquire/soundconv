@@ -1,7 +1,12 @@
 soundconv
 =========
 
-Sound conversion scripts. In this repo are various scripts written to convert sound files from different types
-(e.g. uncompressed (wav) to compressed lossless (flac) or to compressed lossy (ogg)). They also handle adding/editing
-of metadata. Eventually would be good to be able to run the whole lot from a single command with options specifying file
-type and what you want to do (e.g. convert a wav2flac and add metadata, or edit flac metadata etc).
+The main routine (in fact only active routine) is z2fo.py. This takes a zip,
+checks its contents for FLAC files. If finds them, will rename them according
+to a particular pattern, convert them to OGG, and copy both the FLAC and OGG
+to various backup locations. 
+
+To add next: 
+1. Support for MP3 (detect, transcode down, backup).
+2. Storage of metadata in MySQL db (incompletely implemented currently).
+3. Full support for compilations.
