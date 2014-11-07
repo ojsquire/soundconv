@@ -235,6 +235,12 @@ if artwork:
         sys.exit() #come back to this option
     else:
         print "Adding artwork"
+        #If image is a png, convert to jpg (ogg-cover-art.sh only excepts jpg).
+        if artwork[0].endswith(".png"):
+            sp.call(["convert", whereExtract + artwork[0], whereExtract + artwork[0].split('.')[0] + '.jpg'])
+            artwork = [artwork[0].split('.')[0] + '.jpg']
+        else:
+            pass
         cmds = []
         for name in newTrackRoot:
             cmd = ["/home/ollie/bin/ogg-cover-art.sh",whereExtract + artwork[0],outdir + name + '.ogg']
@@ -472,16 +478,14 @@ for filename in zippedFiles:
     cmd = ["rm","-f",whereExtract + filename]
     sp.call(cmd)
 
+deleteZip = raw_input("""Would you like to delete the original Zip file?\n
+Note: if you paid for it, might want to keep it!\nAnswer 'Y' to delete, any other key to keep: """)
+
+if deleteZip == 'Y':
+    sp.call(["rm", "-rf", "zipFname"])
+    print "Original zip file deleted"
+else:
+    pass
+
 print "Finished"
-
-# <codecell>
-
-#l1 = [False, False, False, True]
-#if any(l1) == True:
-#    print "Not all False"
-#else:
-#    print "All False"
-
-# <codecell>
-
 
