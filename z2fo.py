@@ -21,6 +21,7 @@ import os
 import re
 import subprocess as sp
 import glob
+import MySQLdb as sql
 
 # <codecell>
 
@@ -64,6 +65,12 @@ for filename in zippedFiles:
 if not flacFiles:
     print "No FLAC files were found, aborting."
     sys.exit()
+
+#Here want to add capability to handle MP3 file.
+#i.e. if no FLAC are found, but MP3 found instead, rename MP3, transcode, copy to Music, backup untranscoded.
+#Actually, the majority of the script would be exactly the same, would just need to add a few options to deal
+#with MP3. Note: tagging would be different, as dealing with ID3 tags rather than Vorbis.
+#I think we should put this on hold for the moment.
 
 #Print found files
 print "\n" + str(len(zippedFiles)) + " files were found:"
@@ -151,7 +158,7 @@ else:
 
 # <codecell>
 
-#Next is to convert to OGG.
+##Next is to convert to OGG.
 #oggConvert = raw_input("Convert to OGG? 'Y' to convert, any other key to exit.")
 
 #Need root name without ending, as will use for both .flac and .ogg
@@ -194,9 +201,23 @@ print "convert to OGG?"
 convert2ogg = raw_input("Answer 'Y' to convert, any other key to skip: ")
 
 if convert2ogg == 'Y':
-    #Execute
-    for cmd in cmds:
-        sp.call(cmd)
+    #Check if ogg files already exist
+    doesExist = []
+    for name in newTrackRoot:
+        doesExist.append(os.path.isfile(outdir + name + '.ogg'))
+    if any(doesExist) == True:
+        print "OGG files already exist in specified output directory. Continue with conversion?"
+        doConvert = raw_input("Press 'Y' to start conversion, any other key to pass: ")
+        if doConvert == 'Y':
+            #Execute
+            for cmd in cmds:
+                sp.call(cmd)
+        else:
+            pass
+    else:
+        #Execute
+        for cmd in cmds:
+            sp.call(cmd)
 else:
     pass
 
@@ -226,16 +247,35 @@ else:
 for filename in artwork:
     sp.call(["cp",whereExtract + filename, outdir])
 
-#Now we can cp ogg and flac to all the right places.
-#Don't forget artwork
-#~/bin/ogg-cover-art.sh ${picture} ${OggHome}${FileName}.ogg #Ogg artwork
-#done
-
 #Further things:
 #1) interface with MySQL and send all metadata to MySQL table - can then create a nice API-GUI to sit on top of 
 #table to display collection (al-la discogs).
-#2) Could also embed a player / use HTML5 player to play tracks via a browser - sweet! - this would be the basis of the
-#website.
+#MySQL interface
+
+# <codecell>
+
+#Read in data to connect to MySQL db from non-tracked file
+addToMySQL = raw_input("add data to MySQL db? Answer 'Y' to add, any other key to pass: ")
+if addToMySQL == 'Y':
+    sys.path.insert(0, '/home/ollie/Sound/conversion_scripts/soundconv_secure/')
+    import z2foConfig
+
+    db = sql.connect(host=z2foConfig.host, # your host, usually localhost
+                     user=z2foConfig.user, # your username
+                     passwd=z2foConfig.password, # your password
+                     db=z2foConfig.db) # name of the data base
+
+    #Create cursor to execute queries
+    cur = db.cursor()
+
+    #Add genre
+    #genre = allMeta[0]['GENRE']
+    addGenre = "This doesn't work yet, nothing added!"
+
+    #cur.execute(addMetaSQL)
+    print addGenre
+else:
+    pass
 
 # <codecell>
 
@@ -301,24 +341,51 @@ localExtDir = "/home/ollie/Sound/compressed_lossless/" + artistAlNum + '/' + alb
 if connectedDrives:
     print '\nCopy FLAC files to the following external locations? '
     for i in connectedDrives: print i
-    doExtractExt = raw_input("Press 'Y' to copy, any other key to abort: ")
+    doExtractExt = raw_input("Press 'Y' to copy, any other key to pass: ")
     if doExtractExt == 'Y':
         for drive in connectedDrives:
-            print "Copying to " + drive + " this may take a few seconds..."
-            sp.call(["mkdir","-p",drive])
-#            sp.call(["cp",whereExtract + "*",drive])
-            sp.call(['cp', '-t', drive] + glob.glob(whereExtract + '*'))
+            #Check if flac files already exist on device
+            doesExist = []
+            for name in newTrackRoot:
+                doesExist.append(os.path.isfile(drive + name + '.flac'))
+            if any(doesExist) == True:
+                print "FLAC files already exist in " + drive + ". Continue with conversion?"
+                doConvert = raw_input("Press 'Y' to start conversion, any other key to pass: ")
+                if doConvert == 'Y':
+                    #Execute
+                    print "Copying to " + drive + " this may take a few seconds..."
+                    sp.call(["mkdir","-p",drive])
+                    sp.call(['cp', '-t', drive] + glob.glob(whereExtract + '*'))
+                else:
+                    pass
+            else:          
+                print "Copying to " + drive + " this may take a few seconds..."
+                sp.call(["mkdir","-p",drive])
+                sp.call(['cp', '-t', drive] + glob.glob(whereExtract + '*'))
     else:
         pass
 else:
     print 'No external FLAC archive dirs found. Copy locally to' + localExtDir +'instead?'
-    writeLocal = raw_input("Press 'Y' to copy locally, any other key to exit: ")
+    writeLocal = raw_input("Press 'Y' to copy locally, any other key to pass: ")
     if writeLocal == "Y":
-        print 'Copying to ' + localExtDir + ' this may take a few seconds...'
-        sp.call(["mkdir","-p",localExtDir])
-#        sp.call(["cp",whereExtract + "*",localExtDir])
-        sp.call(['cp', '-t', localExtDir] + glob.glob(whereExtract + '*'))
-
+        #Check if flac files exist locally
+        doesExist = []
+        for name in newTrackRoot:
+            doesExist.append(os.path.isfile(localExtDir + name + '.flac'))
+        if any(doesExist) == True:
+            print "FLAC files already exist in " + localExtDir + ". Continue with conversion?"
+            doConvert = raw_input("Press 'Y' to start conversion, any other key to pass: ")
+            if doConvert == 'Y':
+                #Execute
+                print 'Copying to ' + localExtDir + ' this may take a few seconds...'
+                sp.call(["mkdir","-p",localExtDir])
+                sp.call(['cp', '-t', localExtDir] + glob.glob(whereExtract + '*'))
+            else:
+                pass
+        else:
+            print 'Copying to ' + localExtDir + ' this may take a few seconds...'
+            sp.call(["mkdir","-p",localExtDir])
+            sp.call(['cp', '-t', localExtDir] + glob.glob(whereExtract + '*'))
     else:
         pass
 
@@ -327,35 +394,94 @@ googleD = '/home/ollie/Google Drive/Music/' + artistAlNum + '/' + albumAlNum + '
 
 #Make backups of lossy files
 if connectedDrivesLossy:
-    print '\nCopy OGG files to the following external locations? '
+    print '\nCopy OGG files to the following locations? '
     for i in connectedDrivesLossy: print i
     print googleD
-    doExtractExt = raw_input("Press 'Y' to copy, any other key to abort: ")
+    doExtractExt = raw_input("Press 'Y' to copy, any other key to pass: ")
     if doExtractExt == 'Y':
         for drive in connectedDrivesLossy:
-            print "Copying to " + drive + " this may take a few seconds..."
-            sp.call(["mkdir","-p",drive])
-#            sp.call(["cp",outdir + "*",drive])
-            sp.call(['cp', '-t', drive] + glob.glob(outdir + '*'))
-
-        print "Copying to " + googleD
-        sp.call(["mkdir","-p",googleD])
-#        sp.call(["cp",outdir + "*",googleD])
-        sp.call(['cp', '-t', googleD] + glob.glob(outdir + '*'))
-
+            #Check if flac files already exist on device
+            doesExist = []
+            for name in newTrackRoot:
+                doesExist.append(os.path.isfile(drive + name + '.ogg'))
+            if any(doesExist) == True:
+                print "OGG files already exist in " + drive + ". Continue with conversion?"
+                doConvert = raw_input("Press 'Y' to start conversion, any other key to pass: ")
+                if doConvert == 'Y':
+                    #Execute
+                    print "Copying to " + drive + " this may take a few seconds..."
+                    sp.call(["mkdir","-p",drive])
+                    sp.call(['cp', '-t', drive] + glob.glob(outdir + '*'))
+                else:
+                    pass
+            else:         
+                print "Copying to " + drive + " this may take a few seconds..."
+                sp.call(["mkdir","-p",drive])
+                sp.call(['cp', '-t', drive] + glob.glob(outdir + '*'))
+        #Google Drive
+        doesExist = []
+        for name in newTrackRoot:
+            doesExist.append(os.path.isfile(googleD + name + '.ogg'))
+        if any(doesExist) == True:
+            print "OGG files already exist in " + googleD + ". Continue with conversion?"
+            doConvert = raw_input("Press 'Y' to start conversion, any other key to pass: ")
+            if doConvert == 'Y':
+                #Execute
+                print 'Copying to ' + googleD + ' this may take a few seconds...'
+                sp.call(["mkdir","-p",googleD])
+                sp.call(['cp', '-t', googleD] + glob.glob(outdir + '*'))
+            else:
+                pass
+        else:
+            print "Copying to " + googleD
+            sp.call(["mkdir","-p",googleD])
+            sp.call(['cp', '-t', googleD] + glob.glob(outdir + '*'))
     else:
         pass
 else:
-    pass
+    print '\nCopy OGG files to Google Drive?'
+    print 'Drive location: ' + googleD
+    doExtractExt = raw_input("Press 'Y' to copy, any other key to pass: ")
+    if doExtractExt == 'Y':
+        doesExist = []
+        for name in newTrackRoot:
+            doesExist.append(os.path.isfile(googleD + name + '.ogg'))
+        if any(doesExist) == True:
+            print "OGG files already exist in " + googleD + ". Continue with conversion?"
+            doConvert = raw_input("Press 'Y' to start conversion, any other key to pass: ")
+            if doConvert == 'Y':
+                #Execute
+                print 'Copying to ' + googleD + ' this may take a few seconds...'
+                sp.call(["mkdir","-p",googleD])
+                sp.call(['cp', '-t', googleD] + glob.glob(outdir + '*'))
+            else:
+                pass
+        else:
+            print "Copying to " + googleD        
+            sp.call(["mkdir","-p",googleD])
+            sp.call(['cp', '-t', googleD] + glob.glob(outdir + '*'))
+    else:
+        pass
 
-#sp.call(['cp', '-t', drive] + glob.glob(whereExtract + '*'))
+# <codecell>
+
+#At this point, we have extracted all of the metadata and so can delete the extracted files from /tmp/
+print "deleting temporary files from" + whereExtract
+
+for filename in zippedFiles:
+    cmd = ["rm","-f",whereExtract + filename]
+    sp.call(cmd)
 
 print "Finished"
 
 # <codecell>
 
-#At this point, we have extracted all of the metadata and so can delete the extracted files from /tmp/
-for filename in zippedFiles:
-    cmd = ["rm","-f",whereExtract + filename]
-    sp.call(cmd)
+#l1 = [False, False, False, True]
+#if any(l1) == True:
+#    print "Not all False"
+#else:
+#    print "All False"
+
+# <codecell>
+
 
