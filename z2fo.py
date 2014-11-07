@@ -482,7 +482,7 @@ deleteZip = raw_input("""Would you like to delete the original Zip file?\n
 Note: if you paid for it, might want to keep it!\nAnswer 'Y' to delete, any other key to keep: """)
 
 if deleteZip == 'Y':
-    sp.call(["rm", "-rf", "zipFname"])
+    sp.call(["rm", "-rf", zipFname])
     print "Original zip file deleted"
 else:
     pass
