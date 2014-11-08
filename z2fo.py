@@ -270,10 +270,12 @@ else:
     print "No artwork found, aborting"
     sys.exit()
 
-#Copy cover art to /home/ollie/Music/
+#Copy cover art to /home/ollie/Music/ note: only want to copy the cover art used, NOT the others
 print "Copying cover art"
-for filename in artwork:
-    sp.call(["cp",whereExtract + filename, outdir])
+if len(artwork) > 1:
+    sp.call(["cp",whereExtract + artwork[artOpt], outdir])
+else:
+    sp.call(["cp",whereExtract + artwork[0], outdir])
 
 #Further things:
 #1) interface with MySQL and send all metadata to MySQL table - can then create a nice API-GUI to sit on top of 
