@@ -230,9 +230,30 @@ for filename in zippedFiles:
 
 if artwork:
     if len(artwork) > 1:
-        print "select artwork from the following images: "
-        for art in artwork: print art.index() + art
-        sys.exit() #come back to this option
+        print "Multiple artwork found. Please select from the following images: "
+        for art in artwork: 
+            print "Press " + str(artwork.index(art)) + " for " + art
+        artOpt = raw_input("Please choose an option: " )
+        artOpt = int(artOpt) #Convert from string to integer
+        for art in artwork:
+            if artOpt == artwork.index(art): #Check if user innput matches image
+                print "Adding artwork"
+                #If image is a png, convert to jpg (ogg-cover-art.sh only excepts jpg).
+                if artwork[artOpt].endswith(".png"):
+                    sp.call(["convert", whereExtract + artwork[artOpt], whereExtract + artwork[artOpt].split('.')[0] + '.jpg'])
+                    artwork = [artwork[artOpt].split('.')[0] + '.jpg']
+                else:
+                    pass
+                cmds = []
+                for name in newTrackRoot:
+                    cmd = ["/home/ollie/bin/ogg-cover-art.sh",whereExtract + artwork[artOpt],outdir + name + '.ogg']
+                    sp.call(cmd)
+                break                
+            else:
+                continue
+        else: #This else belongs to the for loop, i.e. if reach end of loop w/out match 
+            print "No artwork corresponding to that option, aborting."
+            sys.exit()
     else:
         print "Adding artwork"
         #If image is a png, convert to jpg (ogg-cover-art.sh only excepts jpg).
@@ -250,6 +271,7 @@ else:
     sys.exit()
 
 #Copy cover art to /home/ollie/Music/
+print "Copying cover art"
 for filename in artwork:
     sp.call(["cp",whereExtract + filename, outdir])
 
