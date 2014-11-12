@@ -11,6 +11,7 @@
 #with the bash command: z2fo (I set up an alias in .bashrc)
 #
 #This script unzips a zip containing FLACs and converts to OGGs
+#Note: be good to add options say to only add to MySQL etc.
 
 # <codecell>
 
@@ -277,12 +278,9 @@ if len(artwork) > 1:
 else:
     sp.call(["cp",whereExtract + artwork[0], outdir])
 
-#Further things:
-#1) interface with MySQL and send all metadata to MySQL table - can then create a nice API-GUI to sit on top of 
-#table to display collection (al-la discogs).
-#MySQL interface
-
 # <codecell>
+
+#Add info to MySQL DB
 
 #Read in data to connect to MySQL db from non-tracked file
 addToMySQL = raw_input("add data to MySQL db? Answer 'Y' to add, any other key to pass: ")
@@ -297,13 +295,64 @@ if addToMySQL == 'Y':
 
     #Create cursor to execute queries
     cur = db.cursor()
+    
+    #Debug
+    for meta in allMeta:
+        print meta
+    
+    #Add genre (if doesn't already exist)
+    try:
+        theGenre = allMeta[0]['GENRE']
+    except (KeyError):
+        theGenre = raw_input("No genre tag found, please enter a genre: ")
+        
+    sqlAddGenre = ("INSERT INTO genre (genre) VALUES(%s);")
+    
+    try:
+        cur.execute(sqlAddGenre, (theGenre))
+    except (sql.IntegrityError):
+        print "The genre '" + theGenre + "' already exists in database, skipping."
+        pass
+    
+    #Add artist (if doesn't already exist)
+    theArtist = allMeta[0]['ARTIST']
+    sqlAddArtist = ("INSERT INTO artist (artist) VALUES(%s);")
+    
+    try:
+        print "Adding artist"
+        cur.execute(sqlAddArtist, (theArtist))
+    except (sql.IntegrityError):
+        print "The artist '" + theArtist + "' already exists in database, skipping."
+        pass
 
-    #Add genre
-    #genre = allMeta[0]['GENRE']
-    addGenre = "This doesn't work yet, nothing added!"
+    print "Adding album" #Add album 
+    theAlbum = allMeta[0]['ALBUM']
+    theYear = int(allMeta[0]['DATE'])
 
-    #cur.execute(addMetaSQL)
-    print addGenre
+    sqlAddAlbum = ("""INSERT INTO album (artist_id, genre_id, album, year) 
+                      SELECT artist.artist_id, genre.genre_id, %s, %s 
+                      FROM artist, genre 
+                      WHERE artist.artist = %s AND genre.genre = %s;""")
+    cur.execute(sqlAddAlbum, (theAlbum, theYear, theArtist, theGenre))
+
+    print "Adding tracks" #Add tracks
+    for track in allMeta:
+        print "Adding" + str(track['TITLE'])
+        theTrack = track['TITLE']
+        try:
+            theTrackNo = track['TRACKNUMBER']
+        except (KeyError):
+            theTrackNo = track['track']
+            
+        sqlAddTrack = ("""INSERT INTO tracks (album_id, track, artist_id, genre_id, track_no)
+                          SELECT album.album_id, %s, artist.artist_id, genre.genre_id, %s
+                          FROM album, artist, genre
+                          WHERE album.album = %s AND artist.artist = %s AND genre.genre = %s;""")
+        cur.execute(sqlAddTrack, (theTrack, theTrackNo, theAlbum, theArtist, theGenre))
+        
+    #commit
+    db.commit()
+    
 else:
     pass
 
