@@ -13,6 +13,9 @@ if(narg==0){
 artistIn <- args[1]
 albumIn <- args[2]
 
+artistIn <- "Radiohead"
+albumIn <- "Amnesiac"
+
 print(paste("Artist = ", artistIn))
 print(paste("Album = ", albumIn))
 
@@ -53,6 +56,8 @@ while(is(data.search,'try-error')){
 data.search.clean <- fromJSON(data.search)
  
 #Check if search has found anything
+#Issue here is that could be a release but no master.
+#Way to only query once...?
 if(length(data.search.clean$results)<1){
   #Try type = release
   type = "release"
