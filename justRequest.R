@@ -111,10 +111,10 @@ print(paste("artist = ", artist,", album = ",album,", year = ",year,", genre = "
 print("TRACKS:")
 print(album.data[,c("number","track")])
 
-#Create filenames from track names
-track.names.clean <- gsub("[^[:alnum:]]","_", album.data$track)
+#Create filenames from track names (note: want this to be strict - no foreign script chars etc.)
+track.names.clean <- gsub("[^a-zA-Z0-9]","_", album.data$track)
 
 file.names <- paste(sort(sprintf("%02d", album.data$number)),"_",track.names.clean, ".mp3", sep="")
-
+print(file.names)
 #Rename files based on new names based on meta
 #Read in old names, should automatically be in correct order
