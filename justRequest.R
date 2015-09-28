@@ -13,9 +13,6 @@ if(narg==0){
 artistIn <- args[1]
 albumIn <- args[2]
 
-artistIn <- "Radiohead"
-albumIn <- "Amnesiac"
-
 print(paste("Artist = ", artistIn))
 print(paste("Album = ", albumIn))
 
@@ -41,6 +38,8 @@ getFromDiscogs <- function(request){
        httpheader = c('User-Agent' = "findMusicPM/1.0"))
   return(result)
 }
+
+#curl_setopt($ch, CURLOPT_SSLVERSION, 3); // Force SSLv3 to fix Unknown SSL Protocol error
 
 #Try query
 attemptCount=1
