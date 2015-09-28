@@ -39,75 +39,77 @@ getFromDiscogs <- function(request){
   return(result)
 }
 
-#curl_setopt($ch, CURLOPT_SSLVERSION, 3); // Force SSLv3 to fix Unknown SSL Protocol error
-
-#Try query
-attemptCount=1
-print(paste("Attempt",attemptCount))
-data.search = try(getFromDiscogs(request), silent=TRUE)
-                  
-#Repeat query until we don't get an error
-while(is(data.search,'try-error')){
+executeRequest <- function(request){
+  #Try query
+  attemptCount=1
   print(paste("Attempt",attemptCount))
   data.search = try(getFromDiscogs(request), silent=TRUE)
+  
+  #Repeat query until we don't get an error
+  while(is(data.search,'try-error')){
+    attemptCount=attemptCount+1
+    Sys.sleep(1) #Wait for 1 sec before querying again
+    print(paste("Attempt",attemptCount))
+    data.search = try(getFromDiscogs(request), silent=TRUE)
+  }
+  data.search.clean <- fromJSON(data.search)
+  return(data.search.clean)
 }
 
-data.search.clean <- fromJSON(data.search)
- 
+print("Searching for master ID...")
+data.search.clean <- executeRequest(request)
+
 #Check if search has found anything
 #Issue here is that could be a release but no master.
-#Way to only query once...?
 if(length(data.search.clean$results)<1){
+  print("No master ID found, searching for release ID...")
   #Try type = release
   type = "release"
   request <- paste0(website, "?release_title=", album, "&artist=", artist, "&type=", type ,"&token=", token)
-  
-  data.search <- getURL(request,
-                        .opts = list(ssl.verifypeer = FALSE, followlocation=TRUE),
-                        httpheader = c('User-Agent' = "findMusicPM/1.0"))
-  data.search.clean <- fromJSON(data.search)
+  data.search.clean = executeRequest(request)
   if(length(data.search.clean$results)<1){
-    stop(paste0("No results found for artist=\"", args[1],"\" and album=\"",args[2],"\""))
+    stop(paste0("No ID found for artist=\"", args[1],"\" and album=\"",args[2],"\""))
   }
 }
 
-
 #Get master ID
 master.id <- data.search.clean$results[[1]]$id
-print(master.id)
+
 if(type=="master"){
   master.url <- paste0("https://api.discogs.com/masters/", master.id)
 } else{
   master.url <- paste0("https://api.discogs.com/releases/", master.id)
 }
-#sslversion="SSLVERSION_SSLv3"
-data <- getURL(master.url, .opts = list(ssl.verifypeer = FALSE, followlocation=TRUE),
-               httpheader = c('User-Agent' = "findMusicPM/1.0"))
 
-data.clean <- fromJSON(data)
+print(paste("Getting data for ",type," with ID ", master.id,"...", sep=""))
+data <- executeRequest(master.url)
 
 #Get artwork
-
 #Artist - keep this as input - multiple artists for same name so may get nos otherwise
-#artist <- data.clean$artists[[1]]$name
+artist <- data$artists[[1]]$name
 
 #Album
-album <- data.clean$title
+album <- data$title
 
 #Year
-year <- data.clean$year
+year <- data$year
 
 #Genre (I will use style as genre as it's more informative)
-genre <- data.clean$styles[1]
+genre <- data$styles[1]
 
 #Tracks
-tracks <- data.clean$tracklist
+tracks <- data$tracklist
 track.names <- unlist(lapply(1:length(tracks), function(i) tracks[[i]][["title"]]))
 track.positions <- unlist(lapply(1:length(tracks), function(i) tracks[[i]][["position"]]))
 track.durations <- unlist(lapply(1:length(tracks), function(i) tracks[[i]][["duration"]]))
 
 album.data <- data.frame(number = track.positions, track = track.names, duration = track.durations,
            artist = artist, album = album, year = year, genre = genre)
+
+print("RESULTS#########################################################")
+print(paste("artist = ", artist,", album = ",album,", year = ",year,", genre = ",genre,sep=""))
+print("TRACKS:")
+print(album.data[,c("number","track")])
 
 #Create filenames from track names
 track.names.clean <- gsub("[^[:alnum:]]","_", album.data$track)
@@ -116,4 +118,3 @@ file.names <- paste(sort(sprintf("%02d", album.data$number)),"_",track.names.cle
 
 #Rename files based on new names based on meta
 #Read in old names, should automatically be in correct order
-print(file.names)
